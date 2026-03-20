@@ -15,6 +15,4 @@ typedef struct {
     int capacity;       // Capacity allocated to terms array
 } TermList;
 
-
-
 #endif
