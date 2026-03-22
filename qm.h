@@ -15,4 +15,10 @@ typedef struct {
     int capacity;       // Capacity allocated to terms array
 } TermList;
 
+int init_list(TermList * list, int initial_capacity);
+int add_term(TermList * list, Term t);
+void free_list(TermList * list);
+int build_initial_terms(TermList * list, InputData * input);
+int run_qm_sequence(InputData * input);
+
 #endif
