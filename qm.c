@@ -73,24 +73,23 @@ int group_minterms(TermList * current_terms, InputData * input) {
     int group_count = input->n + 1;
     TermList groups[group_count]; // Array of TermLists
     for (int i = 0; i < group_count; i++) {
-        init_list(&groups[i], 1);
+        if(!init_list(&groups[i], 1)) return 0;
     }
 
     for (int i = 0; i < current_terms->count; i++) {
         Term t = current_terms->terms[i];
-        int ones = count_ones(t);
-        add_term(&groups[ones], t);
+        int ones = count_ones(t.value);
+        if(!add_term(&groups[ones], t)) return 0;
     }
 
 
     return 1;
 }
 
-int count_ones(Term t) {
-    int val = t.value;
+int count_ones(unsigned int term) {
     int count = 0;
-    while (val) {
-        val = val & (val - 1);
+    while (term) {
+        term = term & (term - 1);
         count++;
     }
     return count;
