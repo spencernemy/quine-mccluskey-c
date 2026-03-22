@@ -14,10 +14,14 @@ int init_list(TermList * list, int initial_capacity) {
 }
 
 int add_term(TermList * list, Term t) {
-    if (!list) return 0;
+    if (!list || !(list->terms) || list->capacity <= 0) return 0;
     if (list->count >= list->capacity) {
-        list->capacity *= 2;
-        list->terms = realloc(list->terms, sizeof(Term) * list->capacity);
+        int newCapacity = list->capacity * 2;
+
+        Term * temp;
+        if (!(temp = realloc(list->terms, sizeof(Term) * newCapacity))) return 0;
+        list->capacity = newCapacity;
+        list->terms = temp;
     }
     
     list->terms[list->count++] = t;
@@ -25,7 +29,12 @@ int add_term(TermList * list, Term t) {
 }
 
 void free_list(TermList * list) {
-    if (!list) return;
+    if (!list || !(list->terms)) return;
+
+    for (int i = 0; i < list->count; i++) {
+        free(list->terms[i].covers);
+    }
+
     free(list->terms);
     list->terms = NULL;
     list->count = 0;
@@ -42,9 +51,13 @@ int build_initial_terms(TermList * list, InputData * input) {
         t.value = input->minterms[i];
         t.mask = 0;
         t.used = 0;
-        t.covers = NULL;
-        t.cover_count = 0;
-        if (!(add_term(list, t))) return 0;
+        if (!(t.covers = malloc(sizeof(int)))) return 0;
+        t.covers[0] = input->minterms[i];
+        t.cover_count = 1;
+        if (!(add_term(list, t))) {
+            free(t.covers);
+            return 0;
+        }
     }
     return 1;
 }
@@ -52,10 +65,12 @@ int build_initial_terms(TermList * list, InputData * input) {
 // Ran in main function
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
-    TermList * termList = malloc(sizeof(TermList));
-    init_list(termList, input->count);
-    build_initial_terms(termList, input);
-
-    free(termList);
+    TermList termList;
+    if (!init_list(&termList, input->count)) return 0;
+    if (!build_initial_terms(&termList, input)) {
+        free_list(&termList);
+        return 0;
+    }
+    free_list(&termList);
     return 1;
 }
