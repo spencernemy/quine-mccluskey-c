@@ -54,7 +54,7 @@ int build_initial_terms(TermList * list, InputData * input) {
         if (!(t.covers = malloc(sizeof(int)))) return 0;
         t.covers[0] = input->minterms[i];
         t.cover_count = 1;
-        if (!(add_term(list, t))) {
+        if (!add_term(list, t)) {
             free(t.covers);
             return 0;
         }
@@ -62,15 +62,62 @@ int build_initial_terms(TermList * list, InputData * input) {
     return 1;
 }
 
+/* group_minterms:
+    Takes the original list of terms, creates n + 1 new lists of terms based on
+    number of '1's in each minterm to group them, and places each minterm into
+    the group it belongs in.
+*/
+int group_minterms(TermList * current_terms, InputData * input) {
+    if (!current_terms) return 0;
+
+    int group_count = input->n + 1;
+    TermList groups[group_count]; // Array of TermLists
+    for (int i = 0; i < group_count; i++) {
+        init_list(&groups[i], 1);
+    }
+
+    for (int i = 0; i < current_terms->count; i++) {
+        Term t = current_terms->terms[i];
+        int ones = count_ones(t);
+        add_term(&groups[ones], t);
+    }
+
+
+    return 1;
+}
+
+int count_ones(Term t) {
+    int val = t.value;
+    int count = 0;
+    while (val) {
+        val = val & (val - 1);
+        count++;
+    }
+    return count;
+}
+
 // Ran in main function
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
     TermList termList;
-    if (!init_list(&termList, input->count)) return 0;
+
+    if (!init_list(&termList, input->count)) {
+        printf("Error: QM sequence failed.\n");
+        return 0;
+    }
+
     if (!build_initial_terms(&termList, input)) {
+        printf("Error: QM sequence failed.\n");
         free_list(&termList);
         return 0;
     }
+
+    if (!group_minterms(&termList, input)) {
+        printf("Error: QM sequence failed.\n");
+        free_list(&termList);
+        return 0;
+    }
+
     free_list(&termList);
     return 1;
 }
