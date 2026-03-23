@@ -67,13 +67,13 @@ int build_initial_terms(TermList * list, InputData * input) {
     number of '1's in each minterm to group them, and places each minterm into
     the group it belongs in.
 */
-int group_minterms(TermList * current_terms, InputData * input) {
-    if (!current_terms) return 0;
+TermList * group_minterms(TermList * current_terms, InputData * input) {
+    if (!current_terms) return NULL;
 
     int group_count = input->n + 1;
     TermList groups[group_count]; // Array of TermLists
     for (int i = 0; i < group_count; i++) {
-        if(!init_list(&groups[i], 1)) return 0;
+        if(!init_list(&groups[i], 1)) return NULL;
     }
 
     for (int i = 0; i < current_terms->count; i++) {
@@ -84,6 +84,11 @@ int group_minterms(TermList * current_terms, InputData * input) {
 
 
     return 1;
+}
+
+int combine_round(TermList * current_terms, TermList * next_terms,
+                  TermList * prime_implicants, int n) {
+    // next_terms = group_minterms(current_terms, );
 }
 
 int count_ones(unsigned int term) {
@@ -98,25 +103,39 @@ int count_ones(unsigned int term) {
 // Ran in main function
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
-    TermList termList;
+    TermList initial_list;
 
-    if (!init_list(&termList, input->count)) {
+    if (!init_list(&initial_list, input->count)) {
         printf("Error: QM sequence failed.\n");
         return 0;
     }
 
-    if (!build_initial_terms(&termList, input)) {
+    if (!build_initial_terms(&initial_list, input)) {
         printf("Error: QM sequence failed.\n");
-        free_list(&termList);
+        free_list(&initial_list);
         return 0;
     }
 
-    if (!group_minterms(&termList, input)) {
+    TermList current_terms = initial_list;
+    TermList next_terms, prime_implicants;
+
+    if (!init_list(&next_terms, input->count) || !init_list(&prime_implicants, input->count)) {
         printf("Error: QM sequence failed.\n");
-        free_list(&termList);
+        free_list(&initial_list);
+        return 0;
+    }
+    
+    while (1) {
+        combine_round(&current_terms, &next_terms, &prime_implicants, input->n);
+        break;
+    }
+
+    if (!group_minterms(&initial_list, input)) {
+        printf("Error: QM sequence failed.\n");
+        free_list(&initial_list);
         return 0;
     }
 
-    free_list(&termList);
+    free_list(&initial_list);
     return 1;
 }
