@@ -70,6 +70,16 @@ int build_initial_terms(TermList * list, InputData * input) {
     return 1;
 }
 
+int build_single_term(Term * t, int value, int mask, int cover_count) {
+    if (!t) return 0;
+    t->used = 0;
+    t->value = value;
+    t->mask = mask;
+    t->cover_count = cover_count;
+    if (!(t->covers = malloc(sizeof(int) * cover_count))) return 0;
+    return 1;
+}
+
 /* group_minterms:
     Takes the original list of terms, creates (n + 1) new lists of terms based on
     number of '1's in each minterm to group them, and places each minterm into
@@ -122,7 +132,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
     // add unused current_terms to prime_implicants
 
     // Reset used to 0 for all terms
-    for (int i = 0; i < n + 1; i++) {
+    for (int i = 0; i < current_terms->count; i++) {
         current_terms->terms[i].used = 0;
     }
 
@@ -134,12 +144,18 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
 
         // Loop through each minterm in group1
         for (int j = 0; j < group1.count; j++) {
-            Term term1 = group1.terms[j];
+            Term * term1 = &group1.terms[j];
             // Loop through each minterm in group2 to compare with group1
             for (int k = 0; k < group2.count; k++) {
-                Term term2 = group2.terms[k];
-                if (can_combine(term1, term2)) {
-                    
+                Term * term2 = &group2.terms[k];
+                if (can_combine(*term1, *term2)) {
+                    term1->used = 1;
+                    term2->used = 1;
+
+                    Term * new_term;
+                    if (!(build_single_term(new_term))) return 0;
+
+
                 } else {
 
                 }
