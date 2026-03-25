@@ -9,5 +9,8 @@ typedef struct {
 
 int parse_input(int argc, char *argv[], InputData * data);
 int comp(const void *a, const void *b);
+void cleanup_input(InputData * data);
+int remove_duplicates(InputData * data);
+int validate_minterms(InputData * data);
 
 #endif

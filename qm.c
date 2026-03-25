@@ -41,6 +41,14 @@ void free_list(TermList * list) {
     list->capacity = 0;
 }
 
+void free_group_views(TermList * groups, int n) {
+    if (!groups) return;
+    for (int i = 0; i < n + 1; i++) {
+        free(groups[i].terms);
+    }
+    free(groups);
+}
+
 // End helper functions -----------
 
 
@@ -63,32 +71,95 @@ int build_initial_terms(TermList * list, InputData * input) {
 }
 
 /* group_minterms:
-    Takes the original list of terms, creates n + 1 new lists of terms based on
+    Takes the original list of terms, creates (n + 1) new lists of terms based on
     number of '1's in each minterm to group them, and places each minterm into
     the group it belongs in.
 */
-TermList * group_minterms(TermList * current_terms, InputData * input) {
-    if (!current_terms) return NULL;
+TermList * group_minterms(TermList * current_terms, int n) {
+    if (!current_terms || n < 0) return NULL;
 
-    int group_count = input->n + 1;
-    TermList groups[group_count]; // Array of TermLists
+    int group_count = n + 1;
+
+    // Array of TermLists
+    TermList * groups;
+    if (!(groups = malloc(sizeof(TermList) * group_count))) return NULL;
+    
+    // Initialize each group
     for (int i = 0; i < group_count; i++) {
-        if(!init_list(&groups[i], 1)) return NULL;
+        if(!init_list(&groups[i], 1)) {
+            for (int j = 0; j < i; j++) {
+                free(groups[j].terms);
+            }
+            free(groups);
+            return NULL;
+        }
     }
 
+    // Place each term into its correct group
     for (int i = 0; i < current_terms->count; i++) {
         Term t = current_terms->terms[i];
         int ones = count_ones(t.value);
-        if(!add_term(&groups[ones], t)) return 0;
+
+        if (ones < 0 || ones > n || !add_term(&groups[ones], t)) {
+            for (int j = 0; j < group_count; j++) {
+                free(groups[j].terms);
+            }
+            free(groups);
+            return NULL;
+        }
+    }
+
+    return groups;
+}
+
+int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants, int n) {
+    if (!current_terms || !next_terms || !prime_implicants || n < 0) return 0;
+    
+    TermList * groups = group_minterms(current_terms, n);
+    if (!groups) return 0;
+
+    // Work on: compare groups[i] with groups[i+1], build next_terms,
+    // add unused current_terms to prime_implicants
+
+    // Reset used to 0 for all terms
+    for (int i = 0; i < n + 1; i++) {
+        current_terms->terms[i].used = 0;
+    }
+
+    // Loop through each comparison needed (group[0] w/ group[1], group[1] w/ group[2], etc.)
+    // O(n^3) time complexity required.
+    for (int i = 0; i < n; i++) {
+        TermList group1 = groups[i];
+        TermList group2 = groups[i + 1];
+
+        // Loop through each minterm in group1
+        for (int j = 0; j < group1.count; j++) {
+            Term term1 = group1.terms[j];
+            // Loop through each minterm in group2 to compare with group1
+            for (int k = 0; k < group2.count; k++) {
+                Term term2 = group2.terms[k];
+                if (can_combine(term1, term2)) {
+                    
+                } else {
+
+                }
+            }
+        }
     }
 
 
+    free_group_views(groups, n);
     return 1;
 }
 
-int combine_round(TermList * current_terms, TermList * next_terms,
-                  TermList * prime_implicants, int n) {
-    // next_terms = group_minterms(current_terms, );
+int can_combine(Term term1, Term term2) {
+    if (term1.mask != term2.mask) return 0;
+    int diff = term1.value ^ term2.value; // term1 XOR term2 (bits that differ become 1)
+    // If difference > 0 AND only one bit difference
+    if (diff && !(diff & (diff - 1))) {
+        return 1;
+    }
+    return 0;
 }
 
 int count_ones(unsigned int term) {
@@ -128,12 +199,6 @@ int run_qm_sequence(InputData * input) {
     while (1) {
         combine_round(&current_terms, &next_terms, &prime_implicants, input->n);
         break;
-    }
-
-    if (!group_minterms(&initial_list, input)) {
-        printf("Error: QM sequence failed.\n");
-        free_list(&initial_list);
-        return 0;
     }
 
     free_list(&initial_list);
