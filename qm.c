@@ -137,7 +137,6 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
     }
 
     // Loop through each comparison needed (group[0] w/ group[1], group[1] w/ group[2], etc.)
-    // O(n^3) time complexity required.
     for (int i = 0; i < n; i++) {
         TermList group1 = groups[i];
         TermList group2 = groups[i + 1];
@@ -151,10 +150,27 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
                 if (can_combine(*term1, *term2)) {
                     term1->used = 1;
                     term2->used = 1;
-
+ 
+                    int diff = term1->value ^ term2->value; // XOR
+                    int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
+                    int new_mask = term1->mask | diff; // Add diff bit to mask
+                    int new_cover_count = term1->cover_count + term2->cover_count;
                     Term * new_term;
-                    if (!(build_single_term(new_term))) return 0;
+                    if (!build_single_term(new_term, new_value, new_mask, new_cover_count)) return 0;
 
+                    int duplicate = 0;
+                    for (int l = 0; l < next_terms->count; l++) {
+                        if (new_term->value == next_terms->terms[l].value &&
+                            new_term->mask == next_terms->terms[l].mask) {
+                                duplicate = 1;
+                        }
+                    }
+                    if (duplicate) {
+                        free(new_term->covers);
+                        continue;
+                    }
+
+                    add_term(next_terms, *new_term);
 
                 } else {
 
