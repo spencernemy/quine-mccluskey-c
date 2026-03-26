@@ -69,11 +69,11 @@ int build_initial_terms(TermList * list, InputData * input) {
     return 1;
 }
 
-int build_single_term(Term * t, int value, int mask, int cover_count) {
+int build_single_term(Term * t, int value, int mask, int used, int cover_count) {
     if (!t) return 0;
-    t->used = 0;
     t->value = value;
     t->mask = mask;
+    t->used = used;
     t->cover_count = cover_count;
     if (!(t->covers = malloc(sizeof(int) * cover_count))) return 0;
     return 1;
@@ -161,10 +161,11 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
                     int diff = term1->value ^ term2->value; // XOR
                     int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
                     int new_mask = term1->mask | diff; // Add diff bit to mask
+                    int used = 0;
                     int new_cover_count = term1->cover_count + term2->cover_count;
                     
                     Term new_term;
-                    if (!build_single_term(&new_term, new_value, new_mask, new_cover_count)) {
+                    if (!build_single_term(&new_term, new_value, new_mask, used, new_cover_count)) {
                         free_group_views(groups, n);
                         return 0;
                     }
@@ -177,7 +178,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
                         new_term.covers[term1->cover_count + b] = term2->covers[b];
                     }
 
-
+                    // Duplicate check
                     int duplicate = 0;
                     for (int m = 0; m < next_terms->count; m++) {
                         if (new_term.value == next_terms->terms[m].value &&
@@ -201,6 +202,30 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
         }
     }
 
+
+    // Move unused original terms into prime_implicants
+    for (int i = 0; i < current_terms->count; i++) {
+        if (!current_terms->terms[i].used) {
+            Term t;
+            if (!(build_single_term(&t, current_terms->terms[i].value, current_terms->terms[i].mask,
+                current_terms->terms[i].used, current_terms->terms[i].cover_count))) {
+                free_group_views(groups, n);
+                return 0;
+            }
+
+            for (int j = 0; j < t.cover_count; j++) {
+                t.covers[j] = current_terms->terms[i].covers[j];
+            }
+
+            if (!(add_term(prime_implicants, t))) {
+                free(t.covers);
+                free_group_views(groups, n);
+                return 0;
+            }
+        }
+    }
+
+
     free_group_views(groups, n);
     return 1;
 }
@@ -222,6 +247,10 @@ int count_ones(unsigned int term) {
         count++;
     }
     return count;
+}
+
+int transition_rounds(TermList * current_terms, TermList * next_terms) {
+    
 }
 
 // Ran in main function
@@ -254,6 +283,9 @@ int run_qm_sequence(InputData * input) {
             printf("Error: combine round failed.\n");
             break;
         }
+
+        transition_rounds(&current_terms, &next_terms);
+
         break;
     }
 
