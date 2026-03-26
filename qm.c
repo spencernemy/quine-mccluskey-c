@@ -249,10 +249,6 @@ int count_ones(unsigned int term) {
     return count;
 }
 
-int transition_rounds(TermList * current_terms, TermList * next_terms) {
-    
-}
-
 // Ran in main function
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
@@ -269,7 +265,7 @@ int run_qm_sequence(InputData * input) {
         return 0;
     }
 
-    TermList current_terms = initial_list;
+    TermList * current_terms = &initial_list;
     TermList next_terms, prime_implicants;
 
     if (!init_list(&next_terms, input->count) || !init_list(&prime_implicants, input->count)) {
@@ -279,18 +275,25 @@ int run_qm_sequence(InputData * input) {
     }
     
     while (1) {
-        if (!combine_round(&current_terms, &next_terms, &prime_implicants, input->n)) {
+        if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n)) {
             printf("Error: combine round failed.\n");
             break;
         }
+        
+        if (next_terms.count == 0) {
+            break;
+        }
 
-        transition_rounds(&current_terms, &next_terms);
-
-        break;
+        free_list(current_terms);
+        *current_terms = next_terms;
+        
+        if (!init_list(&next_terms, input->count)) {
+            printf("Error: QM sequence failed.\n");
+            break;
+        }
     }
 
     free_list(&next_terms);
     free_list(&prime_implicants);
-    free_list(&initial_list);
     return 1;
 }
