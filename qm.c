@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "qm.h"
-#include "parser.h"
 
 // Setup helper functions --------
 
@@ -108,7 +107,8 @@ TermList * group_minterms(TermList * current_terms, int n) {
     // Place each term into its correct group
     for (int i = 0; i < current_terms->count; i++) {
         Term t = current_terms->terms[i];
-        int ones = count_ones(t.value);
+        
+        int ones = count_ones(t.value & ~t.mask);
 
         if (ones < 0 || ones > n || !add_term(&groups[ones], t)) {
             for (int j = 0; j < group_count; j++) {
@@ -144,41 +144,62 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
         // Loop through each minterm in group1
         for (int j = 0; j < group1.count; j++) {
             Term * term1 = &group1.terms[j];
+            
             // Loop through each minterm in group2 to compare with group1
             for (int k = 0; k < group2.count; k++) {
                 Term * term2 = &group2.terms[k];
+
                 if (can_combine(*term1, *term2)) {
-                    term1->used = 1;
-                    term2->used = 1;
+
+                    for (int l = 0; l < current_terms->count; l++) {
+                        if (current_terms->terms[l].covers == term1->covers)
+                            current_terms->terms[l].used = 1;
+                        if (current_terms->terms[l].covers == term2->covers)
+                            current_terms->terms[l].used = 1;
+                    }
  
                     int diff = term1->value ^ term2->value; // XOR
                     int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
                     int new_mask = term1->mask | diff; // Add diff bit to mask
                     int new_cover_count = term1->cover_count + term2->cover_count;
-                    Term * new_term;
-                    if (!build_single_term(new_term, new_value, new_mask, new_cover_count)) return 0;
+                    
+                    Term new_term;
+                    if (!build_single_term(&new_term, new_value, new_mask, new_cover_count)) {
+                        free_group_views(groups, n);
+                        return 0;
+                    }
+
+                    // Copy covers
+                    for (int a = 0; a < term1->cover_count; a++) {
+                        new_term.covers[a] = term1->covers[a];
+                    }
+                    for (int b = 0; b < term2->cover_count; b++) {
+                        new_term.covers[term1->cover_count + b] = term2->covers[b];
+                    }
+
 
                     int duplicate = 0;
-                    for (int l = 0; l < next_terms->count; l++) {
-                        if (new_term->value == next_terms->terms[l].value &&
-                            new_term->mask == next_terms->terms[l].mask) {
-                                duplicate = 1;
+                    for (int m = 0; m < next_terms->count; m++) {
+                        if (new_term.value == next_terms->terms[m].value &&
+                            new_term.mask == next_terms->terms[m].mask) {
+                            duplicate = 1;
+                            break;
                         }
                     }
                     if (duplicate) {
-                        free(new_term->covers);
+                        free(new_term.covers);
                         continue;
                     }
 
-                    add_term(next_terms, *new_term);
-
-                } else {
-
+                    if (!add_term(next_terms, new_term)) {
+                        free(new_term.covers);
+                        free_group_views(groups, n);
+                        return 0;
+                    }
                 }
             }
         }
     }
-
 
     free_group_views(groups, n);
     return 1;
@@ -229,10 +250,15 @@ int run_qm_sequence(InputData * input) {
     }
     
     while (1) {
-        combine_round(&current_terms, &next_terms, &prime_implicants, input->n);
+        if (!combine_round(&current_terms, &next_terms, &prime_implicants, input->n)) {
+            printf("Error: combine round failed.\n");
+            break;
+        }
         break;
     }
 
+    free_list(&next_terms);
+    free_list(&prime_implicants);
     free_list(&initial_list);
     return 1;
 }
