@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "qm.h"
 
 // Setup helper functions --------
@@ -245,7 +246,43 @@ int count_ones(unsigned int term) {
 }
 
 int select_final_implicants(TermList * prime_implicants, int * initial_minterms, int initial_minterm_count) {
-    int pi_table[prime_implicants->count][initial_minterm_count];
+    if (!prime_implicants || !initial_minterms) return 0;
+    
+    int rows = prime_implicants->count;
+    int cols = initial_minterm_count;
+    int pi_table[rows][cols]; // Prime implicants table
+    
+    int col_one_counts[cols]; // Array storing the amount of 1s in each column (needed for a later step)
+    memset(col_one_counts, 0, sizeof(col_one_counts)); // Initializes all elements to 0
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            pi_table[i][j] = 0;
+            for (int k = 0; k < prime_implicants->terms[i].cover_count; k++) {
+                if (prime_implicants->terms[i].covers[k] == initial_minterms[j]) {
+                    pi_table[i][j] = 1;
+                    col_one_counts[j]++;
+                }
+            }
+        }
+    }
+    
+    int selected_rows[rows];
+    int selected_row_count = 0;
+    memset(selected_rows, 0, sizeof(selected_rows));
+    
+    for (int j = 0; j < cols; j++) {
+        if (col_one_counts[j] == 1) {
+            for (int i = 0; i < rows; i++) {
+                if (pi_table[i][j] == 1) {
+                    selected_rows[selected_row_count++] = i;
+                }
+            }
+        }
+    }
+    
+
+    return 1;
 }
 
 
