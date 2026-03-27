@@ -19,7 +19,6 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
 
-    // Run QM here
     run_qm_sequence(&input);
 
     free(input.minterms);

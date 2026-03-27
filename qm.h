@@ -27,6 +27,7 @@ TermList * group_minterms(TermList * current_terms, int n);
 int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants, int n);
 int can_combine(Term term1, Term term2);
 int count_ones(unsigned int term);
+int select_final_implicants(TermList * prime_implicants, int * initial_minterms, int initial_minterm_count);
 int run_qm_sequence(InputData * input);
 
 #endif

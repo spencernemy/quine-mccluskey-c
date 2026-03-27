@@ -128,9 +128,6 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
     TermList * groups = group_minterms(current_terms, n);
     if (!groups) return 0;
 
-    // Work on: compare groups[i] with groups[i+1], build next_terms,
-    // add unused current_terms to prime_implicants
-
     // Reset used to 0 for all terms
     for (int i = 0; i < current_terms->count; i++) {
         current_terms->terms[i].used = 0;
@@ -202,7 +199,6 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
         }
     }
 
-
     // Move unused original terms into prime_implicants
     for (int i = 0; i < current_terms->count; i++) {
         if (!current_terms->terms[i].used) {
@@ -224,7 +220,6 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
             }
         }
     }
-
 
     free_group_views(groups, n);
     return 1;
@@ -248,6 +243,11 @@ int count_ones(unsigned int term) {
     }
     return count;
 }
+
+int select_final_implicants(TermList * prime_implicants, int * initial_minterms, int initial_minterm_count) {
+    int pi_table[prime_implicants->count][initial_minterm_count];
+}
+
 
 // Ran in main function
 int run_qm_sequence(InputData * input) {
@@ -291,6 +291,11 @@ int run_qm_sequence(InputData * input) {
             printf("Error: QM sequence failed.\n");
             break;
         }
+    }
+
+    if (!select_final_implicants(&prime_implicants, input->minterms, input->count)) {
+        printf("Error: QM sequence failed.\n");
+        return 0;
     }
 
     free_list(&next_terms);
