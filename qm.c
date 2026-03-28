@@ -269,22 +269,82 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
     
     int selected_rows[rows];
     int selected_row_count = 0;
+    int covered_cols[cols];
     memset(selected_rows, 0, sizeof(selected_rows));
-    
+    memset(covered_cols, 0, sizeof(covered_cols));
+
     for (int j = 0; j < cols; j++) {
-        if (col_one_counts[j] == 1) {
-            for (int i = 0; i < rows; i++) {
-                if (pi_table[i][j] == 1) {
-                    selected_rows[selected_row_count++] = i;
-                }
+        if (col_one_counts[j] != 1) continue;
+
+        // Identify essential minterms
+        int essential_row = -1;
+        for (int i = 0; i < rows; i++) {
+            if (pi_table[i][j] == 1) {
+                essential_row = i;
+                break;
+            }
+        }
+        if (essential_row == -1) continue;
+
+        // Check if already selected
+        if (row_already_selected(selected_rows, selected_row_count, essential_row)) continue;
+
+        selected_rows[selected_row_count++] = essential_row;
+
+        // Marks column (minterm) as covered/done
+        for (int k = 0; k < cols; k++) {
+            if (pi_table[essential_row][k] == 1) {
+                covered_cols[k] = 1;
             }
         }
     }
     
 
+    // Greedy method to cover remaining minterms
+    while (!all_cols_covered(covered_cols, cols)) {
+        int best_row = -1;
+        int best_cover_count = 0;
+
+        for (int i = 0; i < rows; i++) {
+            if (row_already_selected(selected_rows, selected_row_count, i)) continue;
+
+            int current_cover_count = 0;
+            for (int j = 0; j < cols; j++) {
+                if (pi_table[i][j] == 1 && covered_cols[j] == 0) current_cover_count++;
+            }
+            if (current_cover_count > best_cover_count) {
+                best_row = i;
+                best_cover_count = current_cover_count;
+            }
+        }
+
+        selected_rows[selected_row_count++] = best_row;
+        for (int k = 0; k < cols; k++) {
+            if (pi_table[best_row][k] == 1) {
+                covered_cols[k] = 1;
+            }
+        }
+    }
+
+
     return 1;
 }
 
+int all_cols_covered(int covered_cols[], int size) {
+    for (int i = 0; i < size; i++) {
+        if (covered_cols[i] == 0) return 0;
+    }
+    return 1;
+}
+
+int row_already_selected(int selected_rows[], int selected_row_count, int row_checked) {
+    for (int m = 0; m < selected_row_count; m++) {
+        if (selected_rows[m] == row_checked) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 // Ran in main function
 int run_qm_sequence(InputData * input) {
