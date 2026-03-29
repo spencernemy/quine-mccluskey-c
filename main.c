@@ -17,7 +17,9 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < input.count; i++) {
         printf("%d ", input.minterms[i]);
     }
-    printf("\n");
+    printf("\n\n");
+    printf("Step 1: Binary terms\n");
+    
 
     run_qm_sequence(&input);
 

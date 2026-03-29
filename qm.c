@@ -372,7 +372,11 @@ int row_already_selected(int selected_rows[], int selected_row_count, int row_ch
     return 0;
 }
 
-void print_expression(TermList final_implicants, int n) {
+void print_initial_input(InputData * input) {
+    
+}
+
+void print_final_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
     printf("Final minimized Boolean expression: ");
     for (int i = 0; i < final_implicants.count; i++) {
@@ -398,6 +402,8 @@ int run_qm_sequence(InputData * input) {
     if (!input) return 0;
     
     int success = 1;
+
+    print_initial_input(input);
 
     // Temporarily initialized (prevents freeing uninitialized)
     TermList initial_list = {0};
@@ -443,7 +449,7 @@ int run_qm_sequence(InputData * input) {
         success = 0; goto cleanup;
     }
 
-    print_expression(final_implicants, input->n);
+    print_final_expression(final_implicants, input->n);
 
 cleanup:
     free_list(&final_implicants);
