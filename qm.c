@@ -348,6 +348,7 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
 
         if (!add_term(final_implicants, t)) {
             free(t.covers);
+            free_list(final_implicants);
             return 0;
         }
     }
@@ -389,39 +390,41 @@ void print_expression(TermList final_implicants, int n) {
             if (bit == 0) printf("'");
         }
     }
+    printf("\n");
 }
 
 // Ran in main function
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
     
-    TermList initial_list;
+    int success = 1;
+
+    // Temporarily initialized (prevents freeing uninitialized)
+    TermList initial_list = {0};
+    TermList * current_terms = &initial_list;
+    TermList next_terms = {0};
+    TermList prime_implicants = {0};
+    TermList final_implicants = {0};
 
     if (!init_list(&initial_list, input->count)) {
-        printf("Error: QM sequence failed.\n");
-        return 0;
+        printf("Error: init_list failed.\n");
+        success = 0; goto cleanup;
     }
 
     if (!build_initial_terms(&initial_list, input)) {
-        printf("Error: QM sequence failed.\n");
-        free_list(&initial_list);
-        return 0;
+        printf("Error: build_initial_terms failed.\n");
+        success = 0; goto cleanup;
     }
 
-    TermList * current_terms = &initial_list;
-    TermList next_terms, prime_implicants;
-
     if (!init_list(&next_terms, input->count) || !init_list(&prime_implicants, input->count)) {
-        printf("Error: QM sequence failed.\n");
-        free_list(&initial_list);
-        return 0;
+        printf("Error: init_list failed.\n");
+        success = 0; goto cleanup;
     }
     
     while (1) {
         if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n)) {
-            printf("Error: combine round failed.\n");
-            
-            return 0;
+            printf("Error: combine_round failed.\n");
+            success = 0; goto cleanup;
         }
         
         if (next_terms.count == 0) break;
@@ -430,15 +433,14 @@ int run_qm_sequence(InputData * input) {
         *current_terms = next_terms;
         
         if (!init_list(&next_terms, input->count)) {
-            printf("Error: QM sequence failed.\n");
-            return 0;
+            printf("Error: init_list failed.\n");
+            success = 0; goto cleanup;
         }
     }
 
-    TermList final_implicants;
     if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
-        printf("Error: QM sequence failed.\n");
-        return 0;
+        printf("Error: select_final_implicants failed.\n");
+        success = 0; goto cleanup;
     }
 
     print_expression(final_implicants, input->n);
@@ -447,5 +449,7 @@ cleanup:
     free_list(&final_implicants);
     free_list(&next_terms);
     free_list(&prime_implicants);
-    return 1;
+    free_list(&initial_list);
+
+    return success;
 }
