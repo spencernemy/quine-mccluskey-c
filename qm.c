@@ -245,7 +245,8 @@ int count_ones(unsigned int term) {
     return count;
 }
 
-int select_final_implicants(TermList * prime_implicants, int * initial_minterms, int initial_minterm_count) {
+int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
+    int initial_minterm_count, TermList * final_implicants) {
     if (!prime_implicants || !initial_minterms) return 0;
     
     int rows = prime_implicants->count;
@@ -286,7 +287,6 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
         }
         if (essential_row == -1) continue;
 
-        // Check if already selected
         if (row_already_selected(selected_rows, selected_row_count, essential_row)) continue;
 
         selected_rows[selected_row_count++] = essential_row;
@@ -318,7 +318,10 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
             }
         }
 
+        if (best_row == -1) return 0;
+
         selected_rows[selected_row_count++] = best_row;
+
         for (int k = 0; k < cols; k++) {
             if (pi_table[best_row][k] == 1) {
                 covered_cols[k] = 1;
@@ -326,6 +329,25 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
         }
     }
 
+    if (!init_list(final_implicants, selected_row_count)) return 0;
+
+    // Deep copy terms to final implicants
+    for (int i = 0; i < selected_row_count; i++) {
+        int row = selected_rows[i];
+        Term pi_term = prime_implicants->terms[row];
+
+        Term t;
+        if (!build_single_term(&t, pi_term.value, pi_term.mask, pi_term.used, pi_term.cover_count)) return 0;
+
+        for (int j = 0; j < pi_term.cover_count; j++) {
+            t.covers[j] = pi_term.covers[j];
+        }
+
+        if (!add_term(final_implicants, t)) {
+            free(t.covers);
+            return 0;
+        }
+    }
 
     return 1;
 }
@@ -374,27 +396,27 @@ int run_qm_sequence(InputData * input) {
     while (1) {
         if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n)) {
             printf("Error: combine round failed.\n");
-            break;
+            return 0;
         }
         
-        if (next_terms.count == 0) {
-            break;
-        }
+        if (next_terms.count == 0) break;
 
         free_list(current_terms);
         *current_terms = next_terms;
         
         if (!init_list(&next_terms, input->count)) {
             printf("Error: QM sequence failed.\n");
-            break;
+            return 0;
         }
     }
 
-    if (!select_final_implicants(&prime_implicants, input->minterms, input->count)) {
+    TermList final_implicants;
+    if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
         printf("Error: QM sequence failed.\n");
         return 0;
     }
 
+    free_list(&final_implicants);
     free_list(&next_terms);
     free_list(&prime_implicants);
     return 1;
