@@ -374,7 +374,7 @@ int row_already_selected(int selected_rows[], int selected_row_count, int row_ch
 
 void print_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
-    printf("Final minimized Boolean expression: \n\n");
+    printf("Final minimized Boolean expression: ");
     for (int i = 0; i < final_implicants.count; i++) {
         if (i != 0) printf(" + ");
 

@@ -22,7 +22,7 @@ int add_term(TermList * list, Term t);
 void free_list(TermList * list);
 void free_group_views(TermList * groups, int n);
 int build_initial_terms(TermList * list, InputData * input);
-int build_single_term(Term * t, int value, int mask, int cover_count);
+int build_single_term(Term * t, int value, int mask, int used, int cover_count);
 TermList * group_minterms(TermList * current_terms, int n);
 int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants, int n);
 int can_combine(Term term1, Term term2);
