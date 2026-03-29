@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -std=c11
 
 TARGET = qm
 
-SRCS = qm.c parser.c main.c
+SRCS = qm.c display.c parser.c main.c
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)
