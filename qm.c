@@ -373,7 +373,27 @@ int row_already_selected(int selected_rows[], int selected_row_count, int row_ch
 }
 
 void print_initial_input(InputData * input) {
-    
+    if (!input) return;
+
+    printf("Variables: %d\n", input->n);
+    printf("Minterms: ");
+    for (int i = 0; i < input->count; i++) {
+        printf("%d ", input->minterms[i]);
+    }
+    printf("\n\n");
+
+    printf("Step 1: Binary terms\n");
+    for (int i = 0; i < input->count; i++) {
+        if (i != 0) printf(", ");
+        print_binary(input->minterms[i], input->n);
+    }
+}
+
+void print_binary(unsigned int num, int bits) {
+    for (int i = bits - 1; i >= 0; i--) {
+        printf("%d", (num >> i) & 1);
+    }
+    printf("\n");
 }
 
 void print_final_expression(TermList final_implicants, int n) {
