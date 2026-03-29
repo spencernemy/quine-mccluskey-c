@@ -41,6 +41,11 @@ void print_initial_groups(TermList * groups, int n) {
     printf("\n");
 }
 
+void print_combine_round(TermList current_terms, TermList next_terms, int combine_rounds_completed) {
+    if (combine_rounds_completed == 1) printf("Step 3: Combine rounds\n");
+    
+}
+
 void print_final_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
     printf("Final minimized Boolean expression = ");

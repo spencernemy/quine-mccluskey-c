@@ -401,14 +401,16 @@ int run_qm_sequence(InputData * input) {
         success = 0; goto cleanup;
     }
     
-    int combine_rounds_completed = 0; // needed for initial group display
+    int combine_rounds_completed = 0;
     while (1) {
         if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n, combine_rounds_completed)) {
             printf("Error: combine_round failed.\n");
             success = 0; goto cleanup;
         }
-        
+
         combine_rounds_completed++;
+        
+        print_combine_round(*current_terms, next_terms, combine_rounds_completed);
         
         if (next_terms.count == 0) break;
 
