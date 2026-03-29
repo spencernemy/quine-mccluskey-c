@@ -1,5 +1,7 @@
 # 🔢 Quine–McCluskey Boolean Minimizer (C CLI)
 
+An exact Boolean minimization tool implemented from scratch in C, demonstrating bit-level computation and multi-stage algorithm design.
+
 A C-based command-line project that simplifies Boolean expressions using the **Quine–McCluskey algorithm**, an exact method for Boolean minimization.  
 The program takes a set of minterms and outputs a minimized Boolean expression using bit-level operations and structured algorithmic steps.
 
@@ -19,6 +21,17 @@ The implementation emphasizes:
 - Efficient data organization using structs and dynamic arrays
 - Careful tracking of memory ownership and lifecycle
 - Clean separation between computation and output
+
+## Why This Project Matters
+
+Boolean minimization is a fundamental problem in digital logic design and compiler optimization. While tools like Karnaugh maps work for small cases, the Quine–McCluskey algorithm provides a systematic, scalable approach to exact minimization.
+
+This project demonstrates how a non-trivial algorithm can be implemented from scratch in C, combining bit-level manipulation, dynamic memory management, and multi-phase problem solving. It highlights the transition from theoretical concepts to a working system with real input, processing, and output.
+
+Beyond Boolean algebra, the project reinforces core computer science skills including:
+- Designing and structuring multi-stage algorithms
+- Managing memory safely in low-level languages
+- Translating mathematical logic into efficient code
 
 ---
 
