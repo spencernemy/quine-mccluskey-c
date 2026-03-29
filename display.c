@@ -26,13 +26,24 @@ void print_initial_input(InputData * input) {
     printf("\n\n");
 }
 
-void print_initial_groups() {
-
+void print_initial_groups(TermList * groups, int n) {
+    printf("Step 2: Initial groups\n");
+    for (int i = 0; i < n + 1; i++) {
+        printf("Group %d:\n", i);
+        int j;
+        for (j = 0; j < groups[i].count; j++) {
+            if (j != 0) printf(", ");
+            print_binary(groups[i].terms[j].value, n);
+        }
+        if (j == 0) printf("(None)");
+        printf("\n");
+    }
+    printf("\n");
 }
 
 void print_final_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
-    printf("Final minimized Boolean expression: ");
+    printf("Final minimized Boolean expression = ");
     for (int i = 0; i < final_implicants.count; i++) {
         if (i != 0) printf(" + ");
 

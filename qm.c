@@ -4,8 +4,6 @@
 #include "qm.h"
 #include "display.h"
 
-// Setup helper functions --------
-
 int init_list(TermList * list, int initial_capacity) {
     if (!list || initial_capacity < 1) return 0;
     if (!(list->terms = malloc(sizeof(Term) * initial_capacity))) return 0;
@@ -49,9 +47,6 @@ void free_group_views(TermList * groups, int n) {
     }
     free(groups);
 }
-
-// End helper functions -----------
-
 
 int build_initial_terms(TermList * list, InputData * input) {
     if (!list || !input) return 0;
@@ -124,18 +119,21 @@ TermList * group_minterms(TermList * current_terms, int n) {
     return groups;
 }
 
-int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants, int n) {
+int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants,
+    int n, int combine_rounds_completed) {
     if (!current_terms || !next_terms || !prime_implicants || n < 0) return 0;
     
     TermList * groups = group_minterms(current_terms, n);
     if (!groups) return 0;
+
+    if (combine_rounds_completed == 0) print_initial_groups(groups, n);
 
     // Reset used to 0 for all terms
     for (int i = 0; i < current_terms->count; i++) {
         current_terms->terms[i].used = 0;
     }
 
-    // Loop through each comparison needed (group[0] w/ group[1], group[1] w/ group[2], etc.)
+    // Loop through each comparison needed (groups[0] w/ groups[1], groups[1] w/ groups[2], etc.)
     for (int i = 0; i < n; i++) {
         TermList group1 = groups[i];
         TermList group2 = groups[i + 1];
@@ -403,11 +401,14 @@ int run_qm_sequence(InputData * input) {
         success = 0; goto cleanup;
     }
     
+    int combine_rounds_completed = 0; // needed for initial group display
     while (1) {
-        if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n)) {
+        if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n, combine_rounds_completed)) {
             printf("Error: combine_round failed.\n");
             success = 0; goto cleanup;
         }
+        
+        combine_rounds_completed++;
         
         if (next_terms.count == 0) break;
 
