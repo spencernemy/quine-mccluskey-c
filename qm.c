@@ -387,13 +387,13 @@ void print_initial_input(InputData * input) {
         if (i != 0) printf(", ");
         print_binary(input->minterms[i], input->n);
     }
+    printf("\n");
 }
 
 void print_binary(unsigned int num, int bits) {
     for (int i = bits - 1; i >= 0; i--) {
         printf("%d", (num >> i) & 1);
     }
-    printf("\n");
 }
 
 void print_final_expression(TermList final_implicants, int n) {
