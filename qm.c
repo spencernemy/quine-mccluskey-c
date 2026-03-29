@@ -337,7 +337,10 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
         Term pi_term = prime_implicants->terms[row];
 
         Term t;
-        if (!build_single_term(&t, pi_term.value, pi_term.mask, pi_term.used, pi_term.cover_count)) return 0;
+        if (!build_single_term(&t, pi_term.value, pi_term.mask, 0, pi_term.cover_count)) {
+            free_list(final_implicants);
+            return 0;
+        }
 
         for (int j = 0; j < pi_term.cover_count; j++) {
             t.covers[j] = pi_term.covers[j];
@@ -360,17 +363,38 @@ int all_cols_covered(int covered_cols[], int size) {
 }
 
 int row_already_selected(int selected_rows[], int selected_row_count, int row_checked) {
-    for (int m = 0; m < selected_row_count; m++) {
-        if (selected_rows[m] == row_checked) {
+    for (int i = 0; i < selected_row_count; i++) {
+        if (selected_rows[i] == row_checked) {
             return 1;
         }
     }
     return 0;
 }
 
+void print_expression(TermList final_implicants, int n) {
+    char first_letter = 'A';
+    printf("Final minimized Boolean expression: \n\n");
+    for (int i = 0; i < final_implicants.count; i++) {
+        if (i != 0) printf(" + ");
+
+        Term t = final_implicants.terms[i];
+        for (int j = 0; j < n; j++) {
+            int bit_position = n - 1 - j;
+            int bit = (t.value >> bit_position) & 1;
+            int is_masked = (t.mask >> bit_position) & 1;
+
+            if (is_masked) continue;
+
+            printf("%c", first_letter + j);
+            if (bit == 0) printf("'");
+        }
+    }
+}
+
 // Ran in main function
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
+    
     TermList initial_list;
 
     if (!init_list(&initial_list, input->count)) {
@@ -396,6 +420,7 @@ int run_qm_sequence(InputData * input) {
     while (1) {
         if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n)) {
             printf("Error: combine round failed.\n");
+            
             return 0;
         }
         
@@ -416,6 +441,9 @@ int run_qm_sequence(InputData * input) {
         return 0;
     }
 
+    print_expression(final_implicants, input->n);
+
+cleanup:
     free_list(&final_implicants);
     free_list(&next_terms);
     free_list(&prime_implicants);
