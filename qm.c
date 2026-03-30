@@ -400,6 +400,7 @@ int run_qm_sequence(InputData * input) {
     if (!input) return 0;
     
     int success = 1;
+    int n = input->n;
 
     print_initial_input(input);
 
@@ -427,13 +428,13 @@ int run_qm_sequence(InputData * input) {
     
     int combine_rounds_completed = 0;
     while (1) {
-        if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n, combine_rounds_completed)) {
+        if (!combine_round(current_terms, &next_terms, &prime_implicants, n, combine_rounds_completed)) {
             printf("Error: combine_round failed.\n");
             success = 0; goto cleanup;
         }
 
         combine_rounds_completed++;
-                
+        
         if (next_terms.count == 0) break;
 
         free_list(current_terms);
@@ -445,12 +446,14 @@ int run_qm_sequence(InputData * input) {
         }
     }
 
+    print_prime_implicants(prime_implicants, n);
+
     if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
         printf("Error: select_final_implicants failed.\n");
         success = 0; goto cleanup;
     }
 
-    print_final_expression(final_implicants, input->n);
+    print_final_expression(final_implicants, n);
 
 cleanup:
     free_list(&final_implicants);

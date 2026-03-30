@@ -64,6 +64,16 @@ void print_unused_term(Term t, int n, int printed_prev_terms) {
     printf("%s", term_to_str(t, t_str, n));
 }
 
+void print_prime_implicants(TermList prime_implicants, int n) {
+    printf("Step 4: Prime implicants\n");
+    char implicant_str[n+1];
+    for (int i = 0; i < prime_implicants.count; i++) {
+        if (i != 0) printf(", ");
+        printf("%s", term_to_str(prime_implicants.terms[i], implicant_str, n));
+    }
+    printf("\n\n");
+}
+
 void print_final_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
     printf("Final minimized Boolean expression = ");
