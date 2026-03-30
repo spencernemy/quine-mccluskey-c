@@ -242,6 +242,9 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
         if (printed_round_header) print_unused_term(t, n, printed_prev_terms++);
     }
 
+    if (printed_round_header) printf("\n");
+    if (printed_unused_header) printf("\n");
+
     free_group_views(groups, n);
     return 1;
 }
@@ -441,7 +444,6 @@ int run_qm_sequence(InputData * input) {
             success = 0; goto cleanup;
         }
     }
-    printf("\n");
 
     if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
         printf("Error: select_final_implicants failed.\n");
