@@ -58,6 +58,12 @@ void print_single_combination(Term term1, Term term2, Term new_term, int n) {
     printf("%s + %s -> %s\n", term_to_str(term1, term1_str, n), term_to_str(term2, term2_str, n), term_to_str(new_term, new_term_str, n));
 }
 
+void print_unused_term(Term t, int n, int printed_prev_terms) {
+    if (printed_prev_terms) printf(", ");
+    char t_str[n+1];
+    printf("%s", term_to_str(t, t_str, n));
+}
+
 void print_final_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
     printf("Final minimized Boolean expression = ");

@@ -123,12 +123,14 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
     int n, int combine_rounds_completed) {
     if (!current_terms || !next_terms || !prime_implicants || n < 0) return 0;
 
+    int printed_round_header = 0;
+
     TermList * groups = group_minterms(current_terms, n);
     if (!groups) return 0;
 
     if (combine_rounds_completed == 0) {
         print_initial_groups(groups, n);
-        printf("Step 3: Combine rounds\n");
+        printf("Step 3: Combine rounds\n\n");
     }
 
     // Reset used to 0 for all terms
@@ -149,81 +151,95 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
             for (int k = 0; k < group2.count; k++) {
                 Term * term2 = &group2.terms[k];
 
-                if (can_combine(*term1, *term2)) {
+                if (!can_combine(*term1, *term2)) continue;
 
-                    for (int l = 0; l < current_terms->count; l++) {
-                        if (current_terms->terms[l].covers == term1->covers)
-                            current_terms->terms[l].used = 1;
-                        if (current_terms->terms[l].covers == term2->covers)
-                            current_terms->terms[l].used = 1;
-                    }
- 
-                    int diff = term1->value ^ term2->value; // XOR
-                    int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
-                    int new_mask = term1->mask | diff; // Add diff bit to mask
-                    int used = 0;
-                    int new_cover_count = term1->cover_count + term2->cover_count;
-                    
-                    Term new_term;
-                    if (!build_single_term(&new_term, new_value, new_mask, used, new_cover_count)) {
-                        free_group_views(groups, n);
-                        return 0;
-                    }
+                if (!printed_round_header) {
+                    printf("Combine Round %d\n", combine_rounds_completed + 1);
+                    printed_round_header = 1;
+                }
 
-                    // Copy covers
-                    for (int a = 0; a < term1->cover_count; a++) {
-                        new_term.covers[a] = term1->covers[a];
-                    }
-                    for (int b = 0; b < term2->cover_count; b++) {
-                        new_term.covers[term1->cover_count + b] = term2->covers[b];
-                    }
+                for (int l = 0; l < current_terms->count; l++) {
+                    if (current_terms->terms[l].covers == term1->covers)
+                        current_terms->terms[l].used = 1;
+                    if (current_terms->terms[l].covers == term2->covers)
+                        current_terms->terms[l].used = 1;
+                }
 
-                    // Duplicate check
-                    int duplicate = 0;
-                    for (int m = 0; m < next_terms->count; m++) {
-                        if (new_term.value == next_terms->terms[m].value &&
-                            new_term.mask == next_terms->terms[m].mask) {
-                            duplicate = 1;
-                            break;
-                        }
-                    }
-                    if (duplicate) {
-                        free(new_term.covers);
-                        continue;
-                    }
+                int diff = term1->value ^ term2->value; // XOR
+                int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
+                int new_mask = term1->mask | diff; // Add diff bit to mask
+                int used = 0;
+                int new_cover_count = term1->cover_count + term2->cover_count;
+                
+                Term new_term;
+                if (!build_single_term(&new_term, new_value, new_mask, used, new_cover_count)) {
+                    free_group_views(groups, n);
+                    return 0;
+                }
 
-                    print_single_combination(*term1, *term2, new_term, n);
+                // Copy covers
+                for (int a = 0; a < term1->cover_count; a++) {
+                    new_term.covers[a] = term1->covers[a];
+                }
+                for (int b = 0; b < term2->cover_count; b++) {
+                    new_term.covers[term1->cover_count + b] = term2->covers[b];
+                }
 
-                    if (!add_term(next_terms, new_term)) {
-                        free(new_term.covers);
-                        free_group_views(groups, n);
-                        return 0;
+                // Duplicate check
+                int duplicate = 0;
+                for (int m = 0; m < next_terms->count; m++) {
+                    if (new_term.value == next_terms->terms[m].value &&
+                        new_term.mask == next_terms->terms[m].mask) {
+                        duplicate = 1;
+                        break;
                     }
+                }
+                if (duplicate) {
+                    free(new_term.covers);
+                    continue;
+                }
+
+                print_single_combination(*term1, *term2, new_term, n);
+
+                if (!add_term(next_terms, new_term)) {
+                    free(new_term.covers);
+                    free_group_views(groups, n);
+                    return 0;
                 }
             }
         }
     }
 
     // Move unused original terms into prime_implicants
+    int printed_unused_header = 0;
+    int printed_prev_terms = 0;
     for (int i = 0; i < current_terms->count; i++) {
-        if (!current_terms->terms[i].used) {
-            Term t;
-            if (!(build_single_term(&t, current_terms->terms[i].value, current_terms->terms[i].mask,
-                current_terms->terms[i].used, current_terms->terms[i].cover_count))) {
-                free_group_views(groups, n);
-                return 0;
-            }
+        
+        if (current_terms->terms[i].used) continue;
 
-            for (int j = 0; j < t.cover_count; j++) {
-                t.covers[j] = current_terms->terms[i].covers[j];
-            }
-
-            if (!(add_term(prime_implicants, t))) {
-                free(t.covers);
-                free_group_views(groups, n);
-                return 0;
-            }
+        if (printed_round_header && !printed_unused_header) {
+            printf("Unused terms from round %d:\n", combine_rounds_completed + 1);
+            printed_unused_header = 1;
         }
+        
+        Term t;
+        if (!(build_single_term(&t, current_terms->terms[i].value, current_terms->terms[i].mask,
+            current_terms->terms[i].used, current_terms->terms[i].cover_count))) {
+            free_group_views(groups, n);
+            return 0;
+        }
+
+        for (int j = 0; j < t.cover_count; j++) {
+            t.covers[j] = current_terms->terms[i].covers[j];
+        }
+
+        if (!(add_term(prime_implicants, t))) {
+            free(t.covers);
+            free_group_views(groups, n);
+            return 0;
+        }
+
+        if (printed_round_header) print_unused_term(t, n, printed_prev_terms++);
     }
 
     free_group_views(groups, n);
@@ -425,6 +441,7 @@ int run_qm_sequence(InputData * input) {
             success = 0; goto cleanup;
         }
     }
+    printf("\n");
 
     if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
         printf("Error: select_final_implicants failed.\n");
