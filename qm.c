@@ -122,11 +122,14 @@ TermList * group_minterms(TermList * current_terms, int n) {
 int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants,
     int n, int combine_rounds_completed) {
     if (!current_terms || !next_terms || !prime_implicants || n < 0) return 0;
-    
+
     TermList * groups = group_minterms(current_terms, n);
     if (!groups) return 0;
 
-    if (combine_rounds_completed == 0) print_initial_groups(groups, n);
+    if (combine_rounds_completed == 0) {
+        print_initial_groups(groups, n);
+        printf("Step 3: Combine rounds\n");
+    }
 
     // Reset used to 0 for all terms
     for (int i = 0; i < current_terms->count; i++) {
@@ -188,6 +191,8 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
                         free(new_term.covers);
                         continue;
                     }
+
+                    print_single_combination(*term1, *term2, new_term, n);
 
                     if (!add_term(next_terms, new_term)) {
                         free(new_term.covers);
@@ -409,9 +414,7 @@ int run_qm_sequence(InputData * input) {
         }
 
         combine_rounds_completed++;
-        
-        print_combine_round(*current_terms, next_terms, combine_rounds_completed);
-        
+                
         if (next_terms.count == 0) break;
 
         free_list(current_terms);

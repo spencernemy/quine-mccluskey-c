@@ -41,9 +41,21 @@ void print_initial_groups(TermList * groups, int n) {
     printf("\n");
 }
 
-void print_combine_round(TermList current_terms, TermList next_terms, int combine_rounds_completed) {
-    if (combine_rounds_completed == 1) printf("Step 3: Combine rounds\n");
-    
+char * term_to_str(Term t, char * str, int n) {
+    for (int i = n - 1; i >= 0; i--) {
+        int value = (t.value >> i) & 1;
+        int mask = (t.mask >> i) & 1;
+        str[n - 1 - i] = mask ? '-' : (value ? '1' : '0');
+    }
+    str[n] = '\0';
+    return str;
+}
+
+void print_single_combination(Term term1, Term term2, Term new_term, int n) {
+    char term1_str[n+1];
+    char term2_str[n+1];
+    char new_term_str[n+1];
+    printf("%s + %s -> %s\n", term_to_str(term1, term1_str, n), term_to_str(term2, term2_str, n), term_to_str(new_term, new_term_str, n));
 }
 
 void print_final_expression(TermList final_implicants, int n) {
