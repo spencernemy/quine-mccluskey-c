@@ -66,12 +66,43 @@ void print_unused_term(Term t, int n, int printed_prev_terms) {
 
 void print_prime_implicants(TermList prime_implicants, int n) {
     printf("Step 4: Prime implicants\n");
-    char implicant_str[n+1];
     for (int i = 0; i < prime_implicants.count; i++) {
+        char implicant_str[n+1];
         if (i != 0) printf(", ");
         printf("%s", term_to_str(prime_implicants.terms[i], implicant_str, n));
     }
     printf("\n\n");
+}
+
+void print_prime_implicant_chart(TermList prime_implicants, int * minterms, int minterm_count, int n) {
+    if (!minterms) return;
+    
+    int margin_width = n + 5;
+
+    printf("Step 5: Prime implicant chart\n\n");
+    printf("%-*s", margin_width, "");
+    for (int i = 0; i < minterm_count; i++) {
+        printf("%-3d", minterms[i]);
+    }
+    printf("\n");
+
+    for (int i = 0; i < prime_implicants.count; i++) {
+        char implicant_str[n+1];
+        printf("%-*s", margin_width, term_to_str(prime_implicants.terms[i], implicant_str, n));
+
+        for (int j = 0; j < minterm_count; j++) {
+            int covers = 0;
+            for (int k = 0; k < prime_implicants.terms[i].cover_count; k++) {
+                if (prime_implicants.terms[i].covers[k] == minterms[j]) {
+                    covers = 1;
+                    break;
+                }
+            }
+            printf("%-3s", covers ? "X" : "");
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
 
 void print_final_expression(TermList final_implicants, int n) {

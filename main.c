@@ -13,6 +13,10 @@ int main(int argc, char *argv[]) {
 
     if (!parse_input(argc, argv, &input)) return 1;
 
+    printf("========================================\n");
+    printf("   Quine-McCluskey Boolean Minimizer\n");
+    printf("========================================\n");
+
     run_qm_sequence(&input);
 
     free(input.minterms);

@@ -447,6 +447,7 @@ int run_qm_sequence(InputData * input) {
     }
 
     print_prime_implicants(prime_implicants, n);
+    print_prime_implicant_chart(prime_implicants, input->minterms, input->count, n);
 
     if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
         printf("Error: select_final_implicants failed.\n");
