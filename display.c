@@ -51,6 +51,14 @@ char * term_to_str(Term t, char * str, int n) {
     return str;
 }
 
+void print_combine_rounds_header() {
+    printf("Step 3: Combine rounds\n\n");
+}
+
+void print_single_combine_round_header(int combine_rounds_completed) {
+    printf("Combine Round %d\n", combine_rounds_completed + 1);
+}
+
 void print_single_combination(Term term1, Term term2, Term new_term, int n) {
     char term1_str[n+1];
     char term2_str[n+1];
@@ -58,10 +66,19 @@ void print_single_combination(Term term1, Term term2, Term new_term, int n) {
     printf("%s + %s -> %s\n", term_to_str(term1, term1_str, n), term_to_str(term2, term2_str, n), term_to_str(new_term, new_term_str, n));
 }
 
+void print_unused_terms_header(int combine_rounds_completed) {
+    printf("Unused terms from round %d:\n", combine_rounds_completed + 1);
+}
+
 void print_unused_term(Term t, int n, int printed_prev_terms) {
     if (printed_prev_terms) printf(", ");
     char t_str[n+1];
     printf("%s", term_to_str(t, t_str, n));
+}
+
+void print_end_combine_round_newlines(int printed_round_header, int printed_unused_header) {
+    if (printed_round_header) printf("\n");
+    if (printed_unused_header) printf("\n");
 }
 
 void print_prime_implicants(TermList prime_implicants, int n) {
@@ -105,6 +122,14 @@ void print_prime_implicant_chart(TermList prime_implicants, int * minterms, int 
     printf("\n");
 }
 
+void print_essential_prime_implicant(int * printed_header) {
+    if (!printed_header) return;
+    if (!(*printed_header)) {
+
+        *printed_header = 1;
+    }
+}
+
 void print_final_expression(TermList final_implicants, int n) {
     char first_letter = 'A';
     printf("Final minimized Boolean expression = ");
@@ -124,4 +149,8 @@ void print_final_expression(TermList final_implicants, int n) {
         }
     }
     printf("\n");
+}
+
+void print_error(char * error_function_name) {
+    printf("Error: %s failed.\n", error_function_name);
 }

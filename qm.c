@@ -130,7 +130,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
 
     if (combine_rounds_completed == 0) {
         print_initial_groups(groups, n);
-        printf("Step 3: Combine rounds\n\n");
+        print_combine_rounds_header();
     }
 
     // Reset used to 0 for all terms
@@ -154,7 +154,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
                 if (!can_combine(*term1, *term2)) continue;
 
                 if (!printed_round_header) {
-                    printf("Combine Round %d\n", combine_rounds_completed + 1);
+                    print_single_combine_round_header(combine_rounds_completed);
                     printed_round_header = 1;
                 }
 
@@ -218,7 +218,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
         if (current_terms->terms[i].used) continue;
 
         if (printed_round_header && !printed_unused_header) {
-            printf("Unused terms from round %d:\n", combine_rounds_completed + 1);
+            print_unused_terms_header(combine_rounds_completed);
             printed_unused_header = 1;
         }
         
@@ -242,8 +242,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
         if (printed_round_header) print_unused_term(t, n, printed_prev_terms++);
     }
 
-    if (printed_round_header) printf("\n");
-    if (printed_unused_header) printf("\n");
+    print_end_combine_round_newlines(printed_round_header, printed_unused_header);
 
     free_group_views(groups, n);
     return 1;
@@ -297,6 +296,7 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
     memset(selected_rows, 0, sizeof(selected_rows));
     memset(covered_cols, 0, sizeof(covered_cols));
 
+    int printed_header = 0;
     for (int j = 0; j < cols; j++) {
         if (col_one_counts[j] != 1) continue;
 
@@ -311,6 +311,8 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
         if (essential_row == -1) continue;
 
         if (row_already_selected(selected_rows, selected_row_count, essential_row)) continue;
+
+        print_essential_prime_implicant(&printed_header);
 
         selected_rows[selected_row_count++] = essential_row;
 
@@ -412,24 +414,24 @@ int run_qm_sequence(InputData * input) {
     TermList final_implicants = {0};
 
     if (!init_list(&initial_list, input->count)) {
-        printf("Error: init_list failed.\n");
+        print_error("init_list");
         success = 0; goto cleanup;
     }
 
     if (!build_initial_terms(&initial_list, input)) {
-        printf("Error: build_initial_terms failed.\n");
+        print_error("build_initial_terms");
         success = 0; goto cleanup;
     }
 
     if (!init_list(&next_terms, input->count) || !init_list(&prime_implicants, input->count)) {
-        printf("Error: init_list failed.\n");
+        print_error("init_list");
         success = 0; goto cleanup;
     }
     
     int combine_rounds_completed = 0;
     while (1) {
         if (!combine_round(current_terms, &next_terms, &prime_implicants, n, combine_rounds_completed)) {
-            printf("Error: combine_round failed.\n");
+            print_error("combine_round");
             success = 0; goto cleanup;
         }
 
@@ -441,7 +443,7 @@ int run_qm_sequence(InputData * input) {
         *current_terms = next_terms;
         
         if (!init_list(&next_terms, input->count)) {
-            printf("Error: init_list failed.\n");
+            print_error("init_list");
             success = 0; goto cleanup;
         }
     }
@@ -450,7 +452,7 @@ int run_qm_sequence(InputData * input) {
     print_prime_implicant_chart(prime_implicants, input->minterms, input->count, n);
 
     if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
-        printf("Error: select_final_implicants failed.\n");
+        print_error("select_final_implicants");
         success = 0; goto cleanup;
     }
 
