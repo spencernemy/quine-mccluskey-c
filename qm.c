@@ -77,9 +77,9 @@ int build_single_term(Term * t, int value, int mask, int used, int cover_count) 
 }
 
 /* group_minterms:
-    Takes the original list of terms, creates (n + 1) new lists of terms based on
-    number of '1's in each minterm to group them, and places each minterm into
-    the group it belongs in.
+    Takes the original list of terms and separates it into (n + 1) groups based on
+    number of 1s in each term. These groups are then used to compare adjacent groups
+    to find possible combinations in the next step.
 */
 TermList * group_minterms(TermList * current_terms, int n) {
     if (!current_terms || n < 0) return NULL;
@@ -119,6 +119,11 @@ TermList * group_minterms(TermList * current_terms, int n) {
     return groups;
 }
 
+/* combine_round:
+    Completes one iteration of the Quine-McCluskey combination process.
+    Compares terms in adjacent groups, combines the terms that differ by one bit,
+    builds the next round of terms, and marks unused terms from each round as prime implicants.
+*/
 int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants,
     int n, int combine_rounds_completed) {
     if (!current_terms || !next_terms || !prime_implicants || n < 0) return 0;
@@ -267,8 +272,13 @@ int count_ones(unsigned int term) {
     return count;
 }
 
+/* select_final_implicants:
+    Constructs the prime implicant chart and selects a minimal set of implicants.
+    First covers essential prime implicants, then uses a greedy strategy to
+    cover any remaining minterms that are not covered.
+*/
 int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
-    int initial_minterm_count, TermList * final_implicants) {
+    int initial_minterm_count, TermList * final_implicants, int n) {
     if (!prime_implicants || !initial_minterms) return 0;
     
     int rows = prime_implicants->count;
@@ -312,7 +322,7 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
 
         if (row_already_selected(selected_rows, selected_row_count, essential_row)) continue;
 
-        print_essential_prime_implicant(&printed_header);
+        print_essential_prime_implicant(prime_implicants->terms[essential_row], initial_minterms[j], &printed_header, n);
 
         selected_rows[selected_row_count++] = essential_row;
 
@@ -397,7 +407,9 @@ int row_already_selected(int selected_rows[], int selected_row_count, int row_ch
     return 0;
 }
 
-// Ran in main function
+/* run_qm_sequence:
+    Executes the full Quine-McCluskey algorithm.
+*/
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
     
@@ -414,24 +426,24 @@ int run_qm_sequence(InputData * input) {
     TermList final_implicants = {0};
 
     if (!init_list(&initial_list, input->count)) {
-        print_error("init_list");
+        print_function_error("init_list");
         success = 0; goto cleanup;
     }
 
     if (!build_initial_terms(&initial_list, input)) {
-        print_error("build_initial_terms");
+        print_function_error("build_initial_terms");
         success = 0; goto cleanup;
     }
 
     if (!init_list(&next_terms, input->count) || !init_list(&prime_implicants, input->count)) {
-        print_error("init_list");
+        print_function_error("init_list");
         success = 0; goto cleanup;
     }
     
     int combine_rounds_completed = 0;
     while (1) {
         if (!combine_round(current_terms, &next_terms, &prime_implicants, n, combine_rounds_completed)) {
-            print_error("combine_round");
+            print_function_error("combine_round");
             success = 0; goto cleanup;
         }
 
@@ -443,20 +455,20 @@ int run_qm_sequence(InputData * input) {
         *current_terms = next_terms;
         
         if (!init_list(&next_terms, input->count)) {
-            print_error("init_list");
+            print_function_error("init_list");
             success = 0; goto cleanup;
         }
     }
 
-    print_prime_implicants(prime_implicants, n);
-    print_prime_implicant_chart(prime_implicants, input->minterms, input->count, n);
+    print_prime_implicants(&prime_implicants, n);
+    print_prime_implicant_chart(&prime_implicants, input->minterms, input->count, n);
 
-    if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
-        print_error("select_final_implicants");
+    if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants, n)) {
+        print_function_error("select_final_implicants");
         success = 0; goto cleanup;
     }
 
-    print_final_expression(final_implicants, n);
+    print_final_expression(&final_implicants, n);
 
 cleanup:
     free_list(&final_implicants);

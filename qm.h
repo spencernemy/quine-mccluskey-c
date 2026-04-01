@@ -29,7 +29,7 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
 int can_combine(Term term1, Term term2);
 int count_ones(unsigned int term);
 int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
-    int initial_minterm_count, TermList * final_implicants);
+    int initial_minterm_count, TermList * final_implicants, int n);
 int all_cols_covered(int covered_cols[], int size);
 int row_already_selected(int selected_rows[], int selected_row_count, int row_checked);
 void print_initial_input(InputData * input);
