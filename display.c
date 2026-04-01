@@ -102,18 +102,28 @@ void print_prime_implicants(const TermList * prime_implicants, int n) {
 void print_prime_implicant_chart(const TermList * prime_implicants, const int * minterms, int minterm_count, int n) {
     if (!prime_implicants || !minterms) return;
     
-    int margin_width = n + 5;
+    int margin_width = n + 4;
 
     printf("Step 5: Prime implicant chart\n\n");
-    printf("%-*s", margin_width, "");
+    
+    
+    printf("PI%-*s| ", margin_width-2, "");
     for (int i = 0; i < minterm_count; i++) {
         printf("%-3d", minterms[i]);
+    }
+    printf("\n");
+    
+    for (int i = 0; i < margin_width+1; i++) {
+        printf("-");
+    }
+    for (int i = 0; i < minterm_count; i++) {
+        printf("---");
     }
     printf("\n");
 
     for (int i = 0; i < prime_implicants->count; i++) {
         char implicant_str[n+1];
-        printf("%-*s", margin_width, term_to_str(prime_implicants->terms[i], implicant_str, n));
+        printf("%-*s| ", margin_width, term_to_str(prime_implicants->terms[i], implicant_str, n));
 
         for (int j = 0; j < minterm_count; j++) {
             int covers = 0;
@@ -138,8 +148,12 @@ void print_essential_prime_implicant(Term t, int covered_minterm, int * printed_
     }
 
     char implicant_str[n+1];
-    printf("%s is essential (covers minterm %d only)\n", term_to_str(t, implicant_str, n), covered_minterm);
+    printf("%s is essential (only implicant covering minterm %d)\n", term_to_str(t, implicant_str, n), covered_minterm);
 
+}
+
+void print_essential_section_end(int printed_header) {
+    if (printed_header) printf("\n");
 }
 
 void print_remaining_minterms(const int * covered_cols, const int * remaining_minterms, int count) {

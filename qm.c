@@ -333,6 +333,7 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
             }
         }
     }
+    print_essential_section_end(printed_header);
     
     print_remaining_minterms(covered_cols, initial_minterms, cols);
 
