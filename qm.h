@@ -32,9 +32,6 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
     int initial_minterm_count, TermList * final_implicants, int n);
 int all_cols_covered(int covered_cols[], int size);
 int row_already_selected(int selected_rows[], int selected_row_count, int row_checked);
-void print_initial_input(InputData * input);
-void print_binary(unsigned int num, int bits);
-void print_final_expression(TermList final_implicants, int n);
 int run_qm_sequence(InputData * input);
 
 #endif

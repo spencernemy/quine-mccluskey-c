@@ -62,7 +62,7 @@ void print_combine_rounds_header() {
 }
 
 void print_single_combine_round_header(int combine_rounds_completed) {
-    printf("Combine Round %d\n\n", combine_rounds_completed + 1);
+    printf("Combine Round %d\n", combine_rounds_completed + 1);
 }
 
 void print_single_combination(Term term1, Term term2, Term new_term, int n) {
