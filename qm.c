@@ -334,6 +334,7 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
         }
     }
     
+    print_remaining_minterms(covered_cols, initial_minterms, cols);
 
     // Greedy method to cover remaining minterms
     while (!all_cols_covered(covered_cols, cols)) {
@@ -387,6 +388,8 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
             return 0;
         }
     }
+
+    print_final_selected_implicants(final_implicants, n);
 
     return 1;
 }

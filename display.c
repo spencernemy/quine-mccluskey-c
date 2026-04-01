@@ -142,6 +142,41 @@ void print_essential_prime_implicant(Term t, int covered_minterm, int * printed_
 
 }
 
+void print_remaining_minterms(const int * covered_cols, const int * remaining_minterms, int count) {
+    if (!covered_cols || !remaining_minterms) return;
+    printf("Step 7: Remaining uncovered minterms\n");
+
+    int printed = 0;
+    for (int i = 0; i < count; i++) {
+        if (covered_cols[i]) continue;
+
+        if (printed) printf(", ");
+        printf("%d", remaining_minterms[i]);
+        printed = 1;
+    }
+
+    if (!printed) printf("(None)");
+
+    printf("\n\n");
+}
+
+void print_final_selected_implicants(const TermList * final_implicants, int n) {
+    if (!final_implicants) return;
+    printf("Step 8: Final selected implicants\n");
+
+    if (final_implicants->count == 0) {
+        printf("(None)\n\n");
+        return;
+    }
+
+    char implicant_str[n+1];
+    for (int i = 0; i < final_implicants->count; i++) {
+        if (i != 0) printf(", ");
+        printf("%s", term_to_str(final_implicants->terms[i], implicant_str, n));
+    }
+    printf("\n\n");
+}
+
 void print_final_expression(const TermList * final_implicants, int n) {
     if (!final_implicants) return;
     

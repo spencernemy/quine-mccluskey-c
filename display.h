@@ -16,6 +16,8 @@ void print_end_combine_round_newlines(int printed_round_header, int printed_unus
 void print_prime_implicants(const TermList * prime_implicants, int n);
 void print_prime_implicant_chart(const TermList * prime_implicants, const int * minterms, int minterm_count, int n);
 void print_essential_prime_implicant(Term t, int covered_minterm, int * printed_header, int n);
+void print_remaining_minterms(const int * covered_cols, const int * remaining_minterms, int count);
+void print_final_selected_implicants(const TermList * final_implicants, int n);
 void print_final_expression(const TermList * final_implicants, int n);
 void print_function_error(const char * function_name);
 
