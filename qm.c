@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "qm.h"
-
-// Setup helper functions --------
+#include "display.h"
 
 int init_list(TermList * list, int initial_capacity) {
     if (!list || initial_capacity < 1) return 0;
@@ -49,9 +48,6 @@ void free_group_views(TermList * groups, int n) {
     free(groups);
 }
 
-// End helper functions -----------
-
-
 int build_initial_terms(TermList * list, InputData * input) {
     if (!list || !input) return 0;
     Term t;
@@ -81,9 +77,9 @@ int build_single_term(Term * t, int value, int mask, int used, int cover_count) 
 }
 
 /* group_minterms:
-    Takes the original list of terms, creates (n + 1) new lists of terms based on
-    number of '1's in each minterm to group them, and places each minterm into
-    the group it belongs in.
+    Takes the original list of terms and separates it into (n + 1) groups based on
+    number of 1s in each term. These groups are then used to compare adjacent groups
+    to find possible combinations in the next step.
 */
 TermList * group_minterms(TermList * current_terms, int n) {
     if (!current_terms || n < 0) return NULL;
@@ -123,18 +119,31 @@ TermList * group_minterms(TermList * current_terms, int n) {
     return groups;
 }
 
-int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants, int n) {
+/* combine_round:
+    Completes one iteration of the Quine-McCluskey combination process.
+    Compares terms in adjacent groups, combines the terms that differ by one bit,
+    builds the next round of terms, and marks unused terms from each round as prime implicants.
+*/
+int combine_round(TermList * current_terms, TermList * next_terms, TermList * prime_implicants,
+    int n, int combine_rounds_completed) {
     if (!current_terms || !next_terms || !prime_implicants || n < 0) return 0;
-    
+
+    int printed_round_header = 0;
+
     TermList * groups = group_minterms(current_terms, n);
     if (!groups) return 0;
+
+    if (combine_rounds_completed == 0) {
+        print_initial_groups(groups, n);
+        print_combine_rounds_header();
+    }
 
     // Reset used to 0 for all terms
     for (int i = 0; i < current_terms->count; i++) {
         current_terms->terms[i].used = 0;
     }
 
-    // Loop through each comparison needed (group[0] w/ group[1], group[1] w/ group[2], etc.)
+    // Loop through each comparison needed (groups[0] w/ groups[1], groups[1] w/ groups[2], etc.)
     for (int i = 0; i < n; i++) {
         TermList group1 = groups[i];
         TermList group2 = groups[i + 1];
@@ -147,80 +156,98 @@ int combine_round(TermList * current_terms, TermList * next_terms, TermList * pr
             for (int k = 0; k < group2.count; k++) {
                 Term * term2 = &group2.terms[k];
 
-                if (can_combine(*term1, *term2)) {
+                if (!can_combine(*term1, *term2)) continue;
 
-                    for (int l = 0; l < current_terms->count; l++) {
-                        if (current_terms->terms[l].covers == term1->covers)
-                            current_terms->terms[l].used = 1;
-                        if (current_terms->terms[l].covers == term2->covers)
-                            current_terms->terms[l].used = 1;
-                    }
- 
-                    int diff = term1->value ^ term2->value; // XOR
-                    int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
-                    int new_mask = term1->mask | diff; // Add diff bit to mask
-                    int used = 0;
-                    int new_cover_count = term1->cover_count + term2->cover_count;
-                    
-                    Term new_term;
-                    if (!build_single_term(&new_term, new_value, new_mask, used, new_cover_count)) {
-                        free_group_views(groups, n);
-                        return 0;
-                    }
+                if (!printed_round_header) {
+                    print_single_combine_round_header(combine_rounds_completed);
+                    printed_round_header = 1;
+                }
 
-                    // Copy covers
-                    for (int a = 0; a < term1->cover_count; a++) {
-                        new_term.covers[a] = term1->covers[a];
-                    }
-                    for (int b = 0; b < term2->cover_count; b++) {
-                        new_term.covers[term1->cover_count + b] = term2->covers[b];
-                    }
+                for (int l = 0; l < current_terms->count; l++) {
+                    if (current_terms->terms[l].covers == term1->covers)
+                        current_terms->terms[l].used = 1;
+                    if (current_terms->terms[l].covers == term2->covers)
+                        current_terms->terms[l].used = 1;
+                }
 
-                    // Duplicate check
-                    int duplicate = 0;
-                    for (int m = 0; m < next_terms->count; m++) {
-                        if (new_term.value == next_terms->terms[m].value &&
-                            new_term.mask == next_terms->terms[m].mask) {
-                            duplicate = 1;
-                            break;
-                        }
-                    }
-                    if (duplicate) {
-                        free(new_term.covers);
-                        continue;
-                    }
+                int diff = term1->value ^ term2->value; // XOR
+                int new_value = term1->value & ~diff; // Clears diff bit since it's now masked
+                int new_mask = term1->mask | diff; // Add diff bit to mask
+                int used = 0;
+                int new_cover_count = term1->cover_count + term2->cover_count;
+                
+                Term new_term;
+                if (!build_single_term(&new_term, new_value, new_mask, used, new_cover_count)) {
+                    free_group_views(groups, n);
+                    return 0;
+                }
 
-                    if (!add_term(next_terms, new_term)) {
-                        free(new_term.covers);
-                        free_group_views(groups, n);
-                        return 0;
+                // Copy covers
+                for (int a = 0; a < term1->cover_count; a++) {
+                    new_term.covers[a] = term1->covers[a];
+                }
+                for (int b = 0; b < term2->cover_count; b++) {
+                    new_term.covers[term1->cover_count + b] = term2->covers[b];
+                }
+
+                // Duplicate check
+                int duplicate = 0;
+                for (int m = 0; m < next_terms->count; m++) {
+                    if (new_term.value == next_terms->terms[m].value &&
+                        new_term.mask == next_terms->terms[m].mask) {
+                        duplicate = 1;
+                        break;
                     }
+                }
+                if (duplicate) {
+                    free(new_term.covers);
+                    continue;
+                }
+
+                print_single_combination(*term1, *term2, new_term, n);
+
+                if (!add_term(next_terms, new_term)) {
+                    free(new_term.covers);
+                    free_group_views(groups, n);
+                    return 0;
                 }
             }
         }
     }
 
     // Move unused original terms into prime_implicants
+    int printed_unused_header = 0;
+    int printed_prev_terms = 0;
     for (int i = 0; i < current_terms->count; i++) {
-        if (!current_terms->terms[i].used) {
-            Term t;
-            if (!(build_single_term(&t, current_terms->terms[i].value, current_terms->terms[i].mask,
-                current_terms->terms[i].used, current_terms->terms[i].cover_count))) {
-                free_group_views(groups, n);
-                return 0;
-            }
+        
+        if (current_terms->terms[i].used) continue;
 
-            for (int j = 0; j < t.cover_count; j++) {
-                t.covers[j] = current_terms->terms[i].covers[j];
-            }
-
-            if (!(add_term(prime_implicants, t))) {
-                free(t.covers);
-                free_group_views(groups, n);
-                return 0;
-            }
+        if (printed_round_header && !printed_unused_header) {
+            print_unused_terms_header(combine_rounds_completed);
+            printed_unused_header = 1;
         }
+        
+        Term t;
+        if (!(build_single_term(&t, current_terms->terms[i].value, current_terms->terms[i].mask,
+            current_terms->terms[i].used, current_terms->terms[i].cover_count))) {
+            free_group_views(groups, n);
+            return 0;
+        }
+
+        for (int j = 0; j < t.cover_count; j++) {
+            t.covers[j] = current_terms->terms[i].covers[j];
+        }
+
+        if (!(add_term(prime_implicants, t))) {
+            free(t.covers);
+            free_group_views(groups, n);
+            return 0;
+        }
+
+        if (printed_round_header) print_unused_term(t, n, printed_prev_terms++);
     }
+
+    print_end_combine_round_newlines(printed_round_header, printed_unused_header);
 
     free_group_views(groups, n);
     return 1;
@@ -245,8 +272,13 @@ int count_ones(unsigned int term) {
     return count;
 }
 
+/* select_final_implicants:
+    Constructs the prime implicant chart and selects a minimal set of implicants.
+    First covers essential prime implicants, then uses a greedy strategy to
+    cover any remaining minterms that are not covered.
+*/
 int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
-    int initial_minterm_count, TermList * final_implicants) {
+    int initial_minterm_count, TermList * final_implicants, int n) {
     if (!prime_implicants || !initial_minterms) return 0;
     
     int rows = prime_implicants->count;
@@ -274,6 +306,7 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
     memset(selected_rows, 0, sizeof(selected_rows));
     memset(covered_cols, 0, sizeof(covered_cols));
 
+    int printed_header = 0;
     for (int j = 0; j < cols; j++) {
         if (col_one_counts[j] != 1) continue;
 
@@ -289,6 +322,8 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
 
         if (row_already_selected(selected_rows, selected_row_count, essential_row)) continue;
 
+        print_essential_prime_implicant(prime_implicants->terms[essential_row], initial_minterms[j], &printed_header, n);
+
         selected_rows[selected_row_count++] = essential_row;
 
         // Marks column (minterm) as covered/done
@@ -298,7 +333,9 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
             }
         }
     }
+    print_essential_section_end(printed_header);
     
+    print_remaining_minterms(covered_cols, initial_minterms, cols);
 
     // Greedy method to cover remaining minterms
     while (!all_cols_covered(covered_cols, cols)) {
@@ -353,6 +390,8 @@ int select_final_implicants(TermList * prime_implicants, int * initial_minterms,
         }
     }
 
+    print_final_selected_implicants(final_implicants, n);
+
     return 1;
 }
 
@@ -372,32 +411,16 @@ int row_already_selected(int selected_rows[], int selected_row_count, int row_ch
     return 0;
 }
 
-void print_expression(TermList final_implicants, int n) {
-    char first_letter = 'A';
-    printf("Final minimized Boolean expression: ");
-    for (int i = 0; i < final_implicants.count; i++) {
-        if (i != 0) printf(" + ");
-
-        Term t = final_implicants.terms[i];
-        for (int j = 0; j < n; j++) {
-            int bit_position = n - 1 - j;
-            int bit = (t.value >> bit_position) & 1;
-            int is_masked = (t.mask >> bit_position) & 1;
-
-            if (is_masked) continue;
-
-            printf("%c", first_letter + j);
-            if (bit == 0) printf("'");
-        }
-    }
-    printf("\n");
-}
-
-// Ran in main function
+/* run_qm_sequence:
+    Executes the full Quine-McCluskey algorithm.
+*/
 int run_qm_sequence(InputData * input) {
     if (!input) return 0;
     
     int success = 1;
+    int n = input->n;
+
+    print_initial_input(input);
 
     // Temporarily initialized (prevents freeing uninitialized)
     TermList initial_list = {0};
@@ -407,25 +430,28 @@ int run_qm_sequence(InputData * input) {
     TermList final_implicants = {0};
 
     if (!init_list(&initial_list, input->count)) {
-        printf("Error: init_list failed.\n");
+        print_function_error("init_list");
         success = 0; goto cleanup;
     }
 
     if (!build_initial_terms(&initial_list, input)) {
-        printf("Error: build_initial_terms failed.\n");
+        print_function_error("build_initial_terms");
         success = 0; goto cleanup;
     }
 
     if (!init_list(&next_terms, input->count) || !init_list(&prime_implicants, input->count)) {
-        printf("Error: init_list failed.\n");
+        print_function_error("init_list");
         success = 0; goto cleanup;
     }
     
+    int combine_rounds_completed = 0;
     while (1) {
-        if (!combine_round(current_terms, &next_terms, &prime_implicants, input->n)) {
-            printf("Error: combine_round failed.\n");
+        if (!combine_round(current_terms, &next_terms, &prime_implicants, n, combine_rounds_completed)) {
+            print_function_error("combine_round");
             success = 0; goto cleanup;
         }
+
+        combine_rounds_completed++;
         
         if (next_terms.count == 0) break;
 
@@ -433,17 +459,20 @@ int run_qm_sequence(InputData * input) {
         *current_terms = next_terms;
         
         if (!init_list(&next_terms, input->count)) {
-            printf("Error: init_list failed.\n");
+            print_function_error("init_list");
             success = 0; goto cleanup;
         }
     }
 
-    if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants)) {
-        printf("Error: select_final_implicants failed.\n");
+    print_prime_implicants(&prime_implicants, n);
+    print_prime_implicant_chart(&prime_implicants, input->minterms, input->count, n);
+
+    if (!select_final_implicants(&prime_implicants, input->minterms, input->count, &final_implicants, n)) {
+        print_function_error("select_final_implicants");
         success = 0; goto cleanup;
     }
 
-    print_expression(final_implicants, input->n);
+    print_final_expression(&final_implicants, n);
 
 cleanup:
     free_list(&final_implicants);

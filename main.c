@@ -4,6 +4,7 @@
 #include "qm.h"
 
 int main(int argc, char *argv[]) {
+
     InputData input;
 
     input.n = 0;
@@ -12,12 +13,9 @@ int main(int argc, char *argv[]) {
 
     if (!parse_input(argc, argv, &input)) return 1;
 
-    printf("Variables: %d\n", input.n);
-    printf("Minterms: ");
-    for (int i = 0; i < input.count; i++) {
-        printf("%d ", input.minterms[i]);
-    }
-    printf("\n");
+    printf("========================================\n");
+    printf("   Quine-McCluskey Boolean Minimizer\n");
+    printf("========================================\n");
 
     run_qm_sequence(&input);
 
